@@ -172,6 +172,7 @@
 <div id="view-user">
   <div class="nav">
     <div class="nav-item active" id="utnav-request" onclick="userTab('request')">📝 ยื่นคำขอเบิก</div>
+    <div class="nav-item" id="utnav-restock" onclick="userTab('restock')">🔔 แจ้งขอเติมสต็อก</div>
     <div class="nav-item" id="utnav-status" onclick="userTab('status')">🔍 ติดตามสถานะ</div>
     <div class="nav-item" id="utnav-history" onclick="userTab('history')">📋 ประวัติการเบิก</div>
   </div>
@@ -229,6 +230,58 @@
       </div>
     </div>
 
+    <!-- RESTOCK REQUEST -->
+    <div id="ut-restock" class="hide">
+      <div class="card">
+        <div class="section-title">🔔 แจ้งขอเติมสต็อกตลับหมึก</div>
+        <p style="font-size:13px;color:#666;margin-bottom:16px">ใช้เมื่อตลับหมึกที่ต้องการหมดสต็อก ระบบจะแจ้งแอดมินให้จัดหาเพิ่ม</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px">
+          <div>
+            <label>ชื่อ-นามสกุลครู <span style="color:red">*</span></label>
+            <input type="text" id="rs-name" placeholder="เช่น อ.สมศรี รักดี">
+          </div>
+          <div>
+            <label>ห้อง / แผนก <span style="color:red">*</span></label>
+            <select id="rs-room">
+              <option value="">-- เลือกห้อง --</option>
+              <option>12-202 ห้องพักครูสามัญ</option>
+              <option>1X-301 ห้องพักครูการตลาด</option>
+              <option>11-401 ห้องพักครูอาหาร</option>
+              <option>12-201 ห้องพักครูเทคโนโลยีสารสนเทศ</option>
+              <option>ชั้น 1 ห้องครัว</option>
+            </select>
+          </div>
+          <div>
+            <label>เครื่องพิมพ์ <span style="color:red">*</span></label>
+            <select id="rs-printer" onchange="updateRestockToner()">
+              <option value="">-- เลือกเครื่องพิมพ์ --</option>
+              <option value="canon-mf645">Canon MF645</option>
+              <option value="hp-cp1515n">HP CP1515n</option>
+              <option value="brother-hl3150">Brother HL-3150CDN</option>
+              <option value="brother-mfc9140">Brother MFC-9140CDN</option>
+            </select>
+          </div>
+          <div>
+            <label>ตลับหมึกที่ต้องการ <span style="color:red">*</span></label>
+            <select id="rs-toner">
+              <option value="">-- เลือกเครื่องพิมพ์ก่อน --</option>
+            </select>
+          </div>
+          <div style="grid-column:1/-1">
+            <label>หมายเหตุ / เหตุผลที่ต้องการ</label>
+            <input type="text" id="rs-note" placeholder="เช่น หมึกหมดแล้ว ด่วน">
+          </div>
+        </div>
+        <div style="margin-top:18px">
+          <button class="btn btn-primary" onclick="submitRestockRequest()" style="background:#e65100;border-color:#e65100">🔔 แจ้งขอเติมสต็อก</button>
+        </div>
+      </div>
+      <div style="margin-top:16px">
+        <div class="section-title" style="font-size:14px">📋 รายการแจ้งเติมสต็อกของฉัน</div>
+        <div id="restock-list"></div>
+      </div>
+    </div>
+
     <!-- STATUS -->
     <div id="ut-status" class="hide">
       <div class="section-title">🔍 ติดตามสถานะคำขอทั้งหมด</div>
@@ -259,6 +312,7 @@
   <div class="nav">
     <div class="nav-item active" id="atnav-dashboard" onclick="adminTab('dashboard')">📊 ภาพรวม</div>
     <div class="nav-item" id="atnav-approve" onclick="adminTab('approve')">📋 จัดการคำขอ</div>
+    <div class="nav-item" id="atnav-restock" onclick="adminTab('restock')">🔔 แจ้งเติมสต็อก</div>
     <div class="nav-item" id="atnav-stock" onclick="adminTab('stock')">📦 จัดการสต็อก</div>
     <div class="nav-item" id="atnav-report" onclick="adminTab('report')">📈 รายงาน</div>
   </div>
@@ -282,6 +336,12 @@
     <div id="at-approve" class="hide">
       <div class="section-title">📋 จัดการคำขอทั้งหมด</div>
       <div id="approve-list"></div>
+    </div>
+
+    <!-- RESTOCK ALERTS -->
+    <div id="at-restock" class="hide">
+      <div class="section-title">🔔 รายการแจ้งขอเติมสต็อก</div>
+      <div id="admin-restock-list"></div>
     </div>
 
     <!-- STOCK -->
@@ -336,12 +396,14 @@ const DEFAULT_STOCK = {
 let stock = {...DEFAULT_STOCK};
 let requests = [];
 let nextId = 1;
+let restockRequests = [];
+let nextRsId = 1;
 
 /* ── FIREBASE HELPERS ── */
 async function saveData(){
   try{
     const { DATA_REF, setDoc } = window._firestore;
-    await setDoc(DATA_REF, {requests, nextId, stock});
+    await setDoc(DATA_REF, {requests, nextId, stock, restockRequests, nextRsId});
   }catch(e){ console.error("save error",e); }
 }
 
@@ -354,6 +416,8 @@ async function loadData(){
       requests = d.requests || [];
       nextId   = d.nextId   || 1;
       stock    = d.stock    || {...DEFAULT_STOCK};
+      restockRequests = d.restockRequests || [];
+      nextRsId = d.nextRsId || 1;
     }
   }catch(e){ console.error("load error",e); }
 }
@@ -436,29 +500,108 @@ function cancelAdmin(){
 /* USER TABS */
 function userTab(t){
   _currentUserTab=t;
-  ["request","status","history"].forEach(x=>{
+  ["request","restock","status","history"].forEach(x=>{
     document.getElementById("ut-"+x).classList.toggle("hide",x!==t);
     document.getElementById("utnav-"+x).classList.toggle("active",x===t);
   });
   if(t==="history")renderHistory();
   if(t==="status")renderStatus();
+  if(t==="restock")renderRestockList();
 }
 
 /* ADMIN TABS */
 function adminTab(t){
   _currentAdminTab=t;
-  ["dashboard","approve","stock","report"].forEach(x=>{
+  ["dashboard","approve","restock","stock","report"].forEach(x=>{
     document.getElementById("at-"+x).classList.toggle("hide",x!==t);
     document.getElementById("atnav-"+x).classList.toggle("active",x===t);
   });
   if(t==="dashboard")renderDashboard();
   if(t==="approve")renderApprove();
+  if(t==="restock")renderAdminRestock();
   if(t==="stock")renderStock();
   if(t==="report")renderReport();
 }
 
-/* TONER UPDATE */
-function updateToner(){
+/* TONER UPDATE for restock form */
+function updateRestockToner(){
+  const p=document.getElementById("rs-printer").value;
+  const s=document.getElementById("rs-toner");
+  s.innerHTML='<option value="">-- เลือกตลับหมึก --</option>';
+  (TONERS[p]||[]).forEach(t=>{
+    s.innerHTML+=`<option value="${t}">${t} (สต็อก: ${stock[t]||0} ตลับ)</option>`;
+  });
+}
+
+/* SUBMIT RESTOCK REQUEST */
+async function submitRestockRequest(){
+  const name=document.getElementById("rs-name").value.trim();
+  const room=document.getElementById("rs-room").value;
+  const pEl=document.getElementById("rs-printer");
+  const toner=document.getElementById("rs-toner").value;
+  const note=document.getElementById("rs-note").value.trim();
+  if(!name||!room||!pEl.value||!toner){showAlert("กรุณากรอกข้อมูลให้ครบถ้วน","danger");return;}
+  restockRequests.unshift({
+    id:nextRsId++, date:today(), name, room,
+    printer:pEl.options[pEl.selectedIndex].text,
+    toner, note, status:"pending"
+  });
+  await saveData();
+  document.getElementById("rs-name").value="";
+  document.getElementById("rs-note").value="";
+  document.getElementById("rs-room").value="";
+  document.getElementById("rs-printer").value="";
+  document.getElementById("rs-toner").innerHTML='<option value="">-- เลือกเครื่องพิมพ์ก่อน --</option>';
+  showAlert("แจ้งขอเติมสต็อกเรียบร้อยแล้ว แอดมินจะดำเนินการโดยเร็ว");
+  renderRestockList();
+}
+
+/* RENDER USER RESTOCK LIST */
+function renderRestockList(){
+  const el=document.getElementById("restock-list");
+  if(!restockRequests.length){el.innerHTML='<div class="card" style="color:#aaa;text-align:center;padding:24px">ยังไม่มีรายการแจ้งเติมสต็อก</div>';return;}
+  const statusMap={pending:{label:"⏳ รอดำเนินการ",color:"#f57f17"},done:{label:"✅ ดำเนินการแล้ว",color:"#2e7d32"}};
+  el.innerHTML=restockRequests.map(r=>{
+    const s=statusMap[r.status]||statusMap.pending;
+    return `<div class="req-card">
+      <div class="req-card-header">
+        <div style="flex:1">
+          <div class="req-card-title">#RS${r.id} · ${r.toner}</div>
+          <div class="req-card-sub">${r.name} · ${r.room} · ${r.date}</div>
+          ${r.note?`<div class="req-card-sub">หมายเหตุ: ${r.note}</div>`:''}
+        </div>
+        <span style="color:${s.color};font-size:13px;font-weight:600;white-space:nowrap">${s.label}</span>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* RENDER ADMIN RESTOCK */
+function renderAdminRestock(){
+  const el=document.getElementById("admin-restock-list");
+  if(!restockRequests.length){el.innerHTML='<div class="card" style="color:#aaa;text-align:center;padding:28px">ยังไม่มีรายการแจ้งเติมสต็อก</div>';return;}
+  el.innerHTML=restockRequests.map(r=>`
+    <div class="req-card" style="${r.status==='pending'?'border-color:#ffe082;background:#fffde7':''}">
+      <div class="req-card-header">
+        <div style="flex:1">
+          <div class="req-card-title">#RS${r.id} · ${r.name}</div>
+          <div class="req-card-sub">${r.room} · ${r.printer}</div>
+          <div style="margin-top:6px;font-size:14px;font-weight:600;color:#e65100">${r.toner}</div>
+          ${r.note?`<div class="req-card-sub">หมายเหตุ: ${r.note}</div>`:''}
+          <div class="req-card-sub">วันที่แจ้ง: ${r.date} · สต็อกปัจจุบัน: ${stock[r.toner]||0} ตลับ</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+          <span style="font-size:13px;font-weight:600;color:${r.status==='done'?'#2e7d32':'#f57f17'}">${r.status==='done'?'✅ ดำเนินการแล้ว':'⏳ รอดำเนินการ'}</span>
+          ${r.status==='pending'?`<button class="btn btn-success btn-sm" onclick="markRestockDone(${r.id})">✅ ดำเนินการแล้ว</button>`:''}
+        </div>
+      </div>
+    </div>`).join("");
+}
+
+async function markRestockDone(id){
+  const r=restockRequests.find(x=>x.id===id);
+  if(r){ r.status='done'; await saveData(); showAlert(`อัปเดตรายการ #RS${id} เป็น "ดำเนินการแล้ว"`); renderAdminRestock(); renderDashboard(); }
+}
   const p=document.getElementById("req-printer").value;
   const s=document.getElementById("req-toner");
   s.innerHTML='<option value="">-- เลือกตลับหมึก --</option>';
@@ -535,12 +678,14 @@ function renderStatus(){
 function renderDashboard(){
   const counts={pending:0,approved:0,rejected:0,delivered:0};
   requests.forEach(r=>counts[r.status]=(counts[r.status]||0)+1);
+  const pendingRestock = restockRequests.filter(r=>r.status==="pending").length;
   document.getElementById("metrics-grid").innerHTML=`
     <div class="metric"><div class="num">${requests.length}</div><div class="lbl">คำขอทั้งหมด</div></div>
     <div class="metric"><div class="num" style="color:#f57f17">${counts.pending||0}</div><div class="lbl">รอดำเนินการ</div></div>
     <div class="metric"><div class="num" style="color:#2e7d32">${counts.approved||0}</div><div class="lbl">อนุมัติแล้ว</div></div>
     <div class="metric"><div class="num" style="color:#1565c0">${counts.delivered||0}</div><div class="lbl">เสร็จสิ้น</div></div>
     <div class="metric"><div class="num" style="color:#c62828">${counts.rejected||0}</div><div class="lbl">ปฏิเสธ</div></div>
+    <div class="metric" style="cursor:pointer" onclick="adminTab('restock')"><div class="num" style="color:#e65100">${pendingRestock}</div><div class="lbl">🔔 รอเติมสต็อก</div></div>
   `;
   document.getElementById("dash-recent").innerHTML=requests.slice(0,5).map(r=>`<tr>
     <td>#${r.id}</td><td>${r.date}</td><td>${r.name}</td><td>${r.room}</td>
@@ -669,9 +814,11 @@ function renderAll(){
   if(_currentRole==="user"){
     if(_currentUserTab==="status") renderStatus();
     else if(_currentUserTab==="history") renderHistory();
+    else if(_currentUserTab==="restock") renderRestockList();
   } else {
     if(_currentAdminTab==="dashboard") renderDashboard();
     else if(_currentAdminTab==="approve") renderApprove();
+    else if(_currentAdminTab==="restock") renderAdminRestock();
     else if(_currentAdminTab==="stock") renderStock();
     else if(_currentAdminTab==="report") renderReport();
   }
