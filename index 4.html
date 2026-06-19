@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ระบบเบิกตลับหมึก - โรงเรียนจิตรลดาวิชาชีพ</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#222;font-size:15px}
+  a{color:inherit;text-decoration:none}
+  .hide{display:none!important}
+
+  /* Top bar */
+  .topbar{background:#1a3a6b;color:#fff;padding:12px 24px;display:flex;align-items:center;justify-content:space-between}
+  .topbar h1{font-size:17px;font-weight:600}
+  .topbar .subtitle{font-size:12px;opacity:0.75;margin-top:2px}
+  .role-btns{display:flex;gap:8px}
+  .role-btn{padding:6px 14px;border-radius:6px;border:1.5px solid rgba(255,255,255,0.4);background:transparent;color:#fff;cursor:pointer;font-size:13px;font-family:'Sarabun',sans-serif}
+  .role-btn.active{background:#fff;color:#1a3a6b;border-color:#fff;font-weight:600}
+
+  /* Nav */
+  .nav{background:#fff;border-bottom:1px solid #e0e0e0;display:flex;padding:0 24px}
+  .nav-item{padding:12px 18px;font-size:14px;cursor:pointer;border-bottom:2.5px solid transparent;color:#666;font-weight:500}
+  .nav-item.active{color:#1a3a6b;border-bottom-color:#1a3a6b}
+  .nav-item:hover{color:#1a3a6b}
+
+  /* Main */
+  .main{max-width:960px;margin:0 auto;padding:24px 16px}
+
+  /* Alert */
+  .alert{padding:10px 16px;border-radius:8px;font-size:14px;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+  .alert-success{background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7}
+  .alert-danger{background:#ffebee;color:#c62828;border:1px solid #ef9a9a}
+
+  /* Cards */
+  .card{background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:20px}
+  .card+.card{margin-top:16px}
+  .section-title{font-size:16px;font-weight:600;color:#1a3a6b;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+
+  /* Metrics */
+  .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px}
+  .metric{background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:16px;text-align:center}
+  .metric .num{font-size:28px;font-weight:700;line-height:1.1}
+  .metric .lbl{font-size:12px;color:#888;margin-top:4px}
+
+  /* Form */
+  label{font-size:13px;color:#555;display:block;margin-bottom:4px;margin-top:14px;font-weight:500}
+  select,input[type=text],input[type=number],textarea{width:100%;padding:9px 12px;border:1px solid #ccc;border-radius:6px;font-size:14px;font-family:'Sarabun',sans-serif;background:#fff}
+  select:focus,input:focus{outline:none;border-color:#1a3a6b;box-shadow:0 0 0 2px rgba(26,58,107,0.1)}
+
+  /* Buttons */
+  .btn{padding:8px 18px;border-radius:6px;border:1px solid #ccc;background:#fff;cursor:pointer;font-size:14px;font-family:'Sarabun',sans-serif;font-weight:500;display:inline-flex;align-items:center;gap:6px}
+  .btn:hover{background:#f0f0f0}
+  .btn-primary{background:#1a3a6b;color:#fff;border-color:#1a3a6b}
+  .btn-primary:hover{background:#122d56}
+  .btn-success{background:#2e7d32;color:#fff;border-color:#2e7d32}
+  .btn-success:hover{background:#1b5e20}
+  .btn-danger{background:#c62828;color:#fff;border-color:#c62828}
+  .btn-danger:hover{background:#b71c1c}
+  .btn-sm{padding:5px 12px;font-size:12px}
+  .btn-outline{background:transparent;border:1px solid #1a3a6b;color:#1a3a6b}
+  .btn-outline:hover{background:#e8eef7}
+
+  /* Badges */
+  .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap}
+  .badge-pending{background:#fff8e1;color:#f57f17;border:1px solid #ffe082}
+  .badge-approved{background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7}
+  .badge-rejected{background:#ffebee;color:#c62828;border:1px solid #ef9a9a}
+  .badge-delivered{background:#e3f2fd;color:#1565c0;border:1px solid #90caf9}
+
+  /* Table */
+  .tbl-wrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;padding:9px 12px;color:#555;background:#f9f9f9;border-bottom:2px solid #e0e0e0;font-weight:600;white-space:nowrap}
+  td{padding:9px 12px;border-bottom:1px solid #eee;vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:#fafafa}
+
+  /* Stock bar */
+  .stock-bar{height:6px;border-radius:4px;background:#e0e0e0;overflow:hidden;margin-top:6px}
+  .stock-fill{height:100%;border-radius:4px}
+
+  /* Request card */
+  .req-card{background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:14px 16px;margin-bottom:10px}
+  .req-card-header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+  .req-card-title{font-weight:600;font-size:14px}
+  .req-card-sub{font-size:12px;color:#888;margin-top:3px}
+  .req-card-actions{display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap}
+
+  /* Stock grid */
+  .stock-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:20px}
+  .stock-item{background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:14px}
+  .stock-item.low{border-color:#ef9a9a;background:#fffafa}
+
+  @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap');
+
+  /* Admin password modal */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:999}
+  .modal-box{background:#fff;border-radius:12px;padding:32px 28px;width:320px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.18)}
+  .modal-icon{font-size:40px;margin-bottom:12px}
+  .modal-title{font-size:18px;font-weight:700;color:#1a3a6b;margin-bottom:4px}
+  .modal-sub{font-size:13px;color:#888;margin-bottom:20px}
+  .modal-box input[type=password]{width:100%;padding:10px 14px;border:1.5px solid #ccc;border-radius:8px;font-size:16px;text-align:center;letter-spacing:4px;font-family:'Sarabun',sans-serif;margin-bottom:8px}
+  .modal-box input[type=password]:focus{outline:none;border-color:#1a3a6b;box-shadow:0 0 0 2px rgba(26,58,107,0.12)}
+  .modal-error{font-size:13px;color:#c62828;min-height:18px;margin-bottom:10px}
+  .modal-btn{width:100%;padding:10px;border-radius:8px;border:none;background:#1a3a6b;color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:'Sarabun',sans-serif;margin-bottom:8px}
+  .modal-btn:hover{background:#122d56}
+  .modal-cancel{font-size:13px;color:#888;cursor:pointer;text-decoration:underline}
+  .modal-cancel:hover{color:#333}
+</style>
+</head>
+<body>
+
+<!-- Confirm Clear Modal -->
+<div id="confirm-modal" class="modal-overlay hide">
+  <div class="modal-box">
+    <div class="modal-icon">🗑</div>
+    <div class="modal-title">ล้างประวัติทั้งหมด?</div>
+    <div class="modal-sub">ข้อมูลคำขอทั้งหมดจะถูกลบถาวร<br>และไม่สามารถกู้คืนได้</div>
+    <button class="modal-btn" style="background:#c62828" onclick="confirmClear()">🗑 ยืนยัน ล้างประวัติ</button>
+    <div class="modal-cancel" onclick="cancelClear()">ยกเลิก</div>
+  </div>
+</div>
+
+<!-- Admin Password Modal -->
+<div id="admin-modal" class="modal-overlay hide">
+  <div class="modal-box">
+    <div class="modal-icon">🔐</div>
+    <div class="modal-title">เข้าสู่ระบบแอดมิน</div>
+    <div class="modal-sub">กรุณาใส่รหัสผ่านเพื่อเข้าใช้งาน</div>
+    <input type="password" id="admin-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')checkPassword()">
+    <div class="modal-error" id="pw-error"></div>
+    <button class="modal-btn" onclick="checkPassword()">🔓 เข้าสู่ระบบ</button>
+    <div class="modal-cancel" onclick="cancelAdmin()">ยกเลิก</div>
+  </div>
+</div>
+
+<div class="topbar">
+  <div>
+    <div class="title" style="font-size:17px;font-weight:600">📠 ระบบเบิกตลับหมึก</div>
+    <div class="subtitle">โรงเรียนจิตรลดาวิชาชีพ</div>
+  </div>
+  <div class="role-btns">
+    <button class="role-btn active" id="btn-user" onclick="switchRole('user')">👩‍🏫 มุมมองครู</button>
+    <button class="role-btn" id="btn-admin" onclick="switchRole('admin')">🛠 แอดมิน</button>
+  </div>
+</div>
+
+<div id="alert-box" class="main hide" style="padding-top:12px;padding-bottom:0"></div>
+
+<!-- USER VIEW -->
+<div id="view-user">
+  <div class="nav">
+    <div class="nav-item active" id="utnav-request" onclick="userTab('request')">📝 ยื่นคำขอเบิก</div>
+    <div class="nav-item" id="utnav-status" onclick="userTab('status')">🔍 ติดตามสถานะ</div>
+    <div class="nav-item" id="utnav-history" onclick="userTab('history')">📋 ประวัติการเบิก</div>
+  </div>
+  <div class="main">
+
+    <!-- REQUEST FORM -->
+    <div id="ut-request">
+      <div class="card">
+        <div class="section-title">📝 ยื่นคำขอเบิกตลับหมึก</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px">
+          <div>
+            <label>ชื่อ-นามสกุลครู <span style="color:red">*</span></label>
+            <input type="text" id="req-name" placeholder="เช่น อ.สมศรี รักดี">
+          </div>
+          <div>
+            <label>ห้อง / แผนก <span style="color:red">*</span></label>
+            <select id="req-room">
+              <option value="">-- เลือกห้อง --</option>
+              <option>12-202 ห้องธนาบัปปู (ชั้น 2)</option>
+              <option>1X-301 ห้องมัณฑนากาเตอร์</option>
+              <option>11-401 ห้องมัณฑนากาหน่าย</option>
+              <option>12-201 ห้องมัณฑนาการาชมณฑล</option>
+              <option>ชั้น 1 ห้องครัว</option>
+            </select>
+          </div>
+          <div>
+            <label>เครื่องพิมพ์ <span style="color:red">*</span></label>
+            <select id="req-printer" onchange="updateToner()">
+              <option value="">-- เลือกเครื่องพิมพ์ --</option>
+              <option value="canon-mf645">Canon MF645</option>
+              <option value="hp-cp1515n">HP CP1515n</option>
+              <option value="brother-hl3150">Brother HL-3150CDN</option>
+              <option value="brother-mfc9140">Brother MFC-9140CDN</option>
+            </select>
+          </div>
+          <div>
+            <label>ตลับหมึก <span style="color:red">*</span></label>
+            <select id="req-toner">
+              <option value="">-- เลือกเครื่องพิมพ์ก่อน --</option>
+            </select>
+          </div>
+          <div>
+            <label>จำนวน (ตลับ) <span style="color:red">*</span></label>
+            <input type="number" id="req-qty" value="1" min="1" max="10" style="max-width:120px">
+          </div>
+          <div>
+            <label>หมายเหตุ</label>
+            <input type="text" id="req-note" placeholder="เช่น ใช้พิมพ์เอกสารสอบ">
+          </div>
+        </div>
+        <div style="margin-top:18px;display:flex;gap:8px">
+          <button class="btn btn-primary" onclick="submitRequest()">📤 ยื่นคำขอ</button>
+          <button class="btn" onclick="clearForm()">🗑 ล้างข้อมูล</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATUS -->
+    <div id="ut-status" class="hide">
+      <div class="section-title">🔍 ติดตามสถานะคำขอทั้งหมด</div>
+      <div id="status-list"></div>
+    </div>
+
+    <!-- HISTORY -->
+    <div id="ut-history" class="hide">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div class="section-title" style="margin-bottom:0">📋 ประวัติการเบิกทั้งหมด</div>
+        <button class="btn btn-danger btn-sm" onclick="clearHistory()">🗑 ล้างประวัติทั้งหมด</button>
+      </div>
+      <div class="card">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>เลขที่</th><th>วันที่</th><th>ผู้ขอ</th><th>ห้อง</th><th>ตลับหมึก</th><th>จำนวน</th><th>สถานะ</th></tr></thead>
+            <tbody id="history-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ADMIN VIEW -->
+<div id="view-admin" class="hide">
+  <div class="nav">
+    <div class="nav-item active" id="atnav-dashboard" onclick="adminTab('dashboard')">📊 ภาพรวม</div>
+    <div class="nav-item" id="atnav-approve" onclick="adminTab('approve')">📋 จัดการคำขอ</div>
+    <div class="nav-item" id="atnav-stock" onclick="adminTab('stock')">📦 จัดการสต็อก</div>
+    <div class="nav-item" id="atnav-report" onclick="adminTab('report')">📈 รายงาน</div>
+  </div>
+  <div class="main">
+
+    <!-- DASHBOARD -->
+    <div id="at-dashboard">
+      <div class="metrics" id="metrics-grid"></div>
+      <div class="card">
+        <div class="section-title">🕐 คำขอล่าสุด (5 รายการ)</div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>#</th><th>วันที่</th><th>ผู้ขอ</th><th>ห้อง</th><th>ตลับหมึก</th><th>จำนวน</th><th>สถานะ</th><th>อัปเดต</th></tr></thead>
+            <tbody id="dash-recent"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- APPROVE -->
+    <div id="at-approve" class="hide">
+      <div class="section-title">📋 จัดการคำขอทั้งหมด</div>
+      <div id="approve-list"></div>
+    </div>
+
+    <!-- STOCK -->
+    <div id="at-stock" class="hide">
+      <div class="section-title">📦 สต็อกตลับหมึกปัจจุบัน</div>
+      <div class="stock-grid" id="stock-grid"></div>
+      <div class="card">
+        <div class="section-title" style="font-size:14px;color:#333">➕ เพิ่มสต็อก</div>
+        <div style="display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:end">
+          <div><label>ตลับหมึก</label><select id="stock-item"></select></div>
+          <div><label>จำนวนที่เพิ่ม</label><input type="number" id="stock-add-qty" value="1" min="1" style="width:90px"></div>
+          <button class="btn btn-success" onclick="addStock()" style="height:38px;margin-bottom:0">➕ เพิ่ม</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORT -->
+    <div id="at-report" class="hide">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div class="section-title" style="margin-bottom:0">📈 รายงานสรุปการใช้งาน</div>
+        <button class="btn btn-danger btn-sm" onclick="clearHistory()">🗑 ล้างประวัติทั้งหมด</button>
+      </div>
+      <div class="metrics" id="report-metrics"></div>
+      <div class="card">
+        <div class="section-title" style="font-size:14px;color:#333">สรุปการเบิกแยกตามตลับหมึก</div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>ตลับหมึก</th><th>ขอเบิกรวม</th><th>อนุมัติ (ตลับ)</th><th>ปฏิเสธ (ครั้ง)</th><th>สต็อกคงเหลือ</th></tr></thead>
+            <tbody id="report-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const TONERS = {
+  "canon-mf645":["Canon 054 Black","Canon 054 Cyan","Canon 054 Magenta","Canon 054 Yellow"],
+  "hp-cp1515n":["HP CB540A Black","HP CB541A Cyan","HP CB542A Yellow","HP CB543A Magenta"],
+  "brother-hl3150":["Brother TN-261BK","Brother TN-261C","Brother TN-261M","Brother TN-261Y"],
+  "brother-mfc9140":["Brother TN-261BK","Brother TN-261C","Brother TN-261M","Brother TN-261Y"]
+};
+
+const DEFAULT_STOCK = {
+  "Canon 054 Black":5,"Canon 054 Cyan":3,"Canon 054 Magenta":2,"Canon 054 Yellow":4,
+  "HP CB540A Black":2,"HP CB541A Cyan":1,"HP CB542A Yellow":1,"HP CB543A Magenta":1,
+  "Brother TN-261BK":3,"Brother TN-261C":2,"Brother TN-261M":2,"Brother TN-261Y":2
+};
+
+let stock = {...DEFAULT_STOCK};
+let requests = [];
+let nextId = 1;
+
+/* ── STORAGE HELPERS ── */
+async function saveData(){
+  try{
+    await window.storage.set("toner_requests", JSON.stringify({requests, nextId, stock}), true);
+  }catch(e){ console.error("save error",e); }
+}
+
+async function loadData(){
+  try{
+    const res = await window.storage.get("toner_requests", true);
+    if(res && res.value){
+      const d = JSON.parse(res.value);
+      requests = d.requests || [];
+      nextId   = d.nextId   || 1;
+      stock    = d.stock    || {...DEFAULT_STOCK};
+    }
+  }catch(e){ /* ยังไม่มีข้อมูล */ }
+}
+
+function today(){
+  const d=new Date();
+  return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()+543}`;
+}
+
+function statusBadge(s){
+  const m={pending:"⏳ รอดำเนินการ",approved:"✅ อนุมัติแล้ว",rejected:"❌ ปฏิเสธ",delivered:"📦 เสร็จสิ้น"};
+  return `<span class="badge badge-${s}">${m[s]||s}</span>`;
+}
+
+function showAlert(msg,type="success"){
+  const wrap=document.getElementById("alert-box");
+  wrap.innerHTML=`<div class="alert alert-${type}">${type==="success"?"✅":"⚠️"} ${msg}</div>`;
+  wrap.classList.remove("hide");
+  clearTimeout(wrap._timer);
+  wrap._timer=setTimeout(()=>wrap.classList.add("hide"),3500);
+}
+
+/* CLEAR HISTORY */
+function clearHistory(){
+  document.getElementById("confirm-modal").classList.remove("hide");
+}
+async function confirmClear(){
+  requests=[];
+  nextId=1;
+  document.getElementById("confirm-modal").classList.add("hide");
+  await saveData();
+  renderAll();
+  showAlert("ล้างประวัติการเบิกทั้งหมดเรียบร้อยแล้ว","danger");
+}
+function cancelClear(){
+  document.getElementById("confirm-modal").classList.add("hide");
+}
+
+/* ROLE SWITCH */
+const ADMIN_PASSWORD = "1234567890";
+let adminUnlocked = false;
+let _currentUserTab = "request";
+let _currentAdminTab = "dashboard";
+let _currentRole = "user";
+
+function switchRole(r){
+  if(r==="admin" && !adminUnlocked){
+    document.getElementById("admin-modal").classList.remove("hide");
+    document.getElementById("admin-password").value="";
+    document.getElementById("pw-error").textContent="";
+    setTimeout(()=>document.getElementById("admin-password").focus(),100);
+    return;
+  }
+  _currentRole=r;
+  document.getElementById("view-user").classList.toggle("hide",r!=="user");
+  document.getElementById("view-admin").classList.toggle("hide",r!=="admin");
+  document.getElementById("btn-user").classList.toggle("active",r==="user");
+  document.getElementById("btn-admin").classList.toggle("active",r==="admin");
+  if(r==="admin"){adminTab("dashboard");}
+  if(r==="user"){userTab("request");}
+}
+
+function checkPassword(){
+  const pw=document.getElementById("admin-password").value;
+  if(pw===ADMIN_PASSWORD){
+    adminUnlocked=true;
+    document.getElementById("admin-modal").classList.add("hide");
+    switchRole("admin");
+  } else {
+    document.getElementById("pw-error").textContent="❌ รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่";
+    document.getElementById("admin-password").value="";
+    document.getElementById("admin-password").focus();
+  }
+}
+
+function cancelAdmin(){
+  document.getElementById("admin-modal").classList.add("hide");
+}
+
+/* USER TABS */
+function userTab(t){
+  _currentUserTab=t;
+  ["request","status","history"].forEach(x=>{
+    document.getElementById("ut-"+x).classList.toggle("hide",x!==t);
+    document.getElementById("utnav-"+x).classList.toggle("active",x===t);
+  });
+  if(t==="history")renderHistory();
+  if(t==="status")renderStatus();
+}
+
+/* ADMIN TABS */
+function adminTab(t){
+  _currentAdminTab=t;
+  ["dashboard","approve","stock","report"].forEach(x=>{
+    document.getElementById("at-"+x).classList.toggle("hide",x!==t);
+    document.getElementById("atnav-"+x).classList.toggle("active",x===t);
+  });
+  if(t==="dashboard")renderDashboard();
+  if(t==="approve")renderApprove();
+  if(t==="stock")renderStock();
+  if(t==="report")renderReport();
+}
+
+/* TONER UPDATE */
+function updateToner(){
+  const p=document.getElementById("req-printer").value;
+  const s=document.getElementById("req-toner");
+  s.innerHTML='<option value="">-- เลือกตลับหมึก --</option>';
+  (TONERS[p]||[]).forEach(t=>{
+    const qty=stock[t]||0;
+    s.innerHTML+=`<option value="${t}" ${qty===0?"disabled":""}>${t} (สต็อก: ${qty} ตลับ)${qty===0?" — หมด":""}</option>`;
+  });
+}
+
+/* SUBMIT */
+async function submitRequest(){
+  const name=document.getElementById("req-name").value.trim();
+  const room=document.getElementById("req-room").value;
+  const pEl=document.getElementById("req-printer");
+  const toner=document.getElementById("req-toner").value;
+  const qty=parseInt(document.getElementById("req-qty").value)||1;
+  const note=document.getElementById("req-note").value.trim();
+  if(!name||!room||!pEl.value||!toner){showAlert("กรุณากรอกข้อมูลให้ครบถ้วน","danger");return;}
+  if((stock[toner]||0)<qty){showAlert(`สต็อก ${toner} ไม่เพียงพอ (มีเพียง ${stock[toner]||0} ตลับ)`,"danger");return;}
+  requests.unshift({id:nextId++,date:today(),name,room,printer:pEl.options[pEl.selectedIndex].text,toner,qty,note,status:"pending"});
+  await saveData();
+  clearForm();
+  showAlert("ยื่นคำขอเบิกเรียบร้อยแล้ว รอแอดมินอนุมัติ");
+}
+
+function clearForm(){
+  ["req-name","req-note"].forEach(id=>document.getElementById(id).value="");
+  ["req-room","req-printer"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("req-qty").value=1;
+  document.getElementById("req-toner").innerHTML='<option value="">-- เลือกเครื่องพิมพ์ก่อน --</option>';
+}
+
+/* HISTORY */
+function renderHistory(){
+  document.getElementById("history-body").innerHTML=
+    requests.map(r=>`<tr>
+      <td>#${r.id}</td><td>${r.date}</td><td>${r.name}</td><td>${r.room}</td>
+      <td>${r.toner}</td><td style="text-align:center">${r.qty}</td><td>${statusBadge(r.status)}</td>
+    </tr>`).join("")||`<tr><td colspan="7" style="text-align:center;color:#aaa;padding:20px">ยังไม่มีประวัติการเบิก</td></tr>`;
+}
+
+/* STATUS */
+function renderStatus(){
+  const el=document.getElementById("status-list");
+  if(!requests.length){el.innerHTML='<div class="card" style="color:#aaa;text-align:center;padding:28px">ยังไม่มีคำขอในระบบ</div>';return;}
+  const statusInfo={
+    pending:{icon:"⏳",label:"รอดำเนินการ",desc:"คำขอของคุณอยู่ระหว่างรอแอดมินพิจารณา",color:"#f57f17",bg:"#fff8e1",border:"#ffe082"},
+    approved:{icon:"✅",label:"อนุมัติแล้ว",desc:"ช่างกำลังมาดำเนินการเปลี่ยน กรุณารอสักครู่",color:"#2e7d32",bg:"#e8f5e9",border:"#a5d6a7"},
+    delivered:{icon:"📦",label:"เสร็จสิ้น",desc:"ดำเนินการเสร็จสิ้นแล้ว",color:"#1565c0",bg:"#e3f2fd",border:"#90caf9"},
+    rejected:{icon:"❌",label:"ไม่อนุมัติ",desc:"คำขอถูกปฏิเสธ กรุณาติดต่อแอดมินเพื่อสอบถามเพิ่มเติม",color:"#c62828",bg:"#ffebee",border:"#ef9a9a"}
+  };
+  el.innerHTML=requests.map(r=>{
+    const s=statusInfo[r.status]||statusInfo.pending;
+    return `<div class="req-card" style="border-color:${s.border};background:${s.bg}">
+      <div class="req-card-header">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <span style="font-size:22px">${s.icon}</span>
+            <span style="font-size:15px;font-weight:700;color:${s.color}">${s.label}</span>
+          </div>
+          <div class="req-card-title">#${r.id} · ${r.toner} × ${r.qty} ตลับ</div>
+          <div class="req-card-sub">${r.name} · ${r.room}</div>
+          <div class="req-card-sub">วันที่ยื่น: ${r.date}${r.note?` · หมายเหตุ: ${r.note}`:""}</div>
+          <div style="margin-top:8px;font-size:13px;color:${s.color};font-weight:500;background:#fff;padding:6px 10px;border-radius:6px;border:1px solid ${s.border}">
+            💬 ${s.desc}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* DASHBOARD */
+function renderDashboard(){
+  const counts={pending:0,approved:0,rejected:0,delivered:0};
+  requests.forEach(r=>counts[r.status]=(counts[r.status]||0)+1);
+  document.getElementById("metrics-grid").innerHTML=`
+    <div class="metric"><div class="num">${requests.length}</div><div class="lbl">คำขอทั้งหมด</div></div>
+    <div class="metric"><div class="num" style="color:#f57f17">${counts.pending||0}</div><div class="lbl">รอดำเนินการ</div></div>
+    <div class="metric"><div class="num" style="color:#2e7d32">${counts.approved||0}</div><div class="lbl">อนุมัติแล้ว</div></div>
+    <div class="metric"><div class="num" style="color:#1565c0">${counts.delivered||0}</div><div class="lbl">เสร็จสิ้น</div></div>
+    <div class="metric"><div class="num" style="color:#c62828">${counts.rejected||0}</div><div class="lbl">ปฏิเสธ</div></div>
+  `;
+  document.getElementById("dash-recent").innerHTML=requests.slice(0,5).map(r=>`<tr>
+    <td>#${r.id}</td><td>${r.date}</td><td>${r.name}</td><td>${r.room}</td>
+    <td>${r.toner}</td><td style="text-align:center">${r.qty}</td>
+    <td>${statusBadge(r.status)}</td>
+    <td>
+      <select onchange="changeStatus(${r.id},this.value)" style="font-size:12px;padding:4px 6px;border:1px solid #ccc;border-radius:4px;cursor:pointer;font-family:'Sarabun',sans-serif">
+        <option value="">🔄 เปลี่ยน</option>
+        <option value="pending" ${r.status==="pending"?"disabled":""}>⏳ รอดำเนินการ</option>
+        <option value="approved" ${r.status==="approved"?"disabled":""}>✅ อนุมัติ</option>
+        <option value="delivered" ${r.status==="delivered"?"disabled":""}>📦 เสร็จสิ้น</option>
+      </select>
+    </td>
+  </tr>`).join("");
+}
+
+/* APPROVE */
+function renderApprove(){
+  const el=document.getElementById("approve-list");
+  if(!requests.length){el.innerHTML='<div class="card" style="color:#aaa;text-align:center;padding:28px">ยังไม่มีคำขอในระบบ</div>';return;}
+  el.innerHTML=requests.map(r=>`
+    <div class="req-card">
+      <div class="req-card-header">
+        <div style="flex:1">
+          <div class="req-card-title">#${r.id} · ${r.name}</div>
+          <div class="req-card-sub">${r.room} · ${r.printer}</div>
+          <div style="margin-top:6px;font-size:14px;font-weight:600;color:#1a3a6b">${r.toner} × ${r.qty} ตลับ</div>
+          ${r.note?`<div class="req-card-sub">หมายเหตุ: ${r.note}</div>`:''}
+          <div class="req-card-sub">วันที่: ${r.date} · สต็อกปัจจุบัน: ${stock[r.toner]||0} ตลับ</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+          <div>${statusBadge(r.status)}</div>
+          <div class="req-card-actions">
+            <select onchange="changeStatus(${r.id},this.value)" class="btn btn-sm" style="padding:5px 8px;font-size:12px;cursor:pointer">
+              <option value="">🔄 เปลี่ยนสถานะ</option>
+              <option value="pending" ${r.status==="pending"?"disabled":""}>⏳ รอดำเนินการ</option>
+              <option value="approved" ${r.status==="approved"?"disabled":""}>✅ อนุมัติ</option>
+              <option value="delivered" ${r.status==="delivered"?"disabled":""}>📦 เสร็จสิ้น</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>`).join("");
+}
+
+async function changeStatus(id,newStatus){
+  if(!newStatus)return;
+  const r=requests.find(x=>x.id===id);
+  if(!r)return;
+  const oldStatus=r.status;
+  if(newStatus==="approved" && oldStatus!=="approved"){
+    if((stock[r.toner]||0)<r.qty){showAlert(`สต็อก ${r.toner} ไม่เพียงพอ (มี ${stock[r.toner]||0} ตลับ)`,"danger");renderApprove();return;}
+    stock[r.toner]=(stock[r.toner]||0)-r.qty;
+  }
+  if(oldStatus==="approved" && newStatus!=="approved" && newStatus!=="delivered"){
+    stock[r.toner]=(stock[r.toner]||0)+r.qty;
+  }
+  r.status=newStatus;
+  await saveData();
+  const labels={pending:"รอดำเนินการ",approved:"อนุมัติ",delivered:"เสร็จสิ้น"};
+  showAlert(`อัปเดตสถานะคำขอ #${id} เป็น "${labels[newStatus]}" เรียบร้อย`);
+  renderApprove();renderDashboard();
+}
+
+/* STOCK */
+function renderStock(){
+  const LOW=2;
+  document.getElementById("stock-grid").innerHTML=Object.entries(stock).map(([name,qty])=>{
+    const pct=Math.min(100,Math.round(qty/10*100));
+    const col=qty<=LOW?"#ef5350":qty<=4?"#ff9800":"#43a047";
+    const low=qty<=LOW?`<span style="font-size:11px;color:#c62828;font-weight:600">⚠️ สต็อกต่ำ</span>`:"";
+    return `<div class="stock-item ${qty<=LOW?'low':''}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <div style="font-size:13px;font-weight:600">${name}</div>
+        ${low}
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="stock-bar" style="flex:1"><div class="stock-fill" style="width:${pct}%;background:${col}"></div></div>
+        <div style="font-size:15px;font-weight:700;color:#333">${qty}</div>
+      </div>
+    </div>`;
+  }).join("");
+  const sel=document.getElementById("stock-item");
+  sel.innerHTML='<option value="">-- เลือกตลับหมึก --</option>'+
+    Object.keys(stock).map(n=>`<option value="${n}">${n} (${stock[n]} ตลับ)</option>`).join("");
+}
+
+async function addStock(){
+  const item=document.getElementById("stock-item").value;
+  const qty=parseInt(document.getElementById("stock-add-qty").value)||0;
+  if(!item||qty<=0){showAlert("กรุณาเลือกตลับหมึกและจำนวน","danger");return;}
+  stock[item]=(stock[item]||0)+qty;
+  await saveData();
+  showAlert(`เพิ่มสต็อก ${item} จำนวน +${qty} ตลับ (รวม ${stock[item]} ตลับ)`);
+  renderStock();
+}
+
+/* REPORT */
+function renderReport(){
+  const appReqs=requests.filter(r=>r.status==="approved"||r.status==="delivered");
+  const rejReqs=requests.filter(r=>r.status==="rejected");
+  const totalQty=appReqs.reduce((s,r)=>s+r.qty,0);
+  document.getElementById("report-metrics").innerHTML=`
+    <div class="metric"><div class="num">${requests.length}</div><div class="lbl">คำขอทั้งหมด</div></div>
+    <div class="metric"><div class="num" style="color:#2e7d32">${appReqs.length}</div><div class="lbl">อนุมัติแล้ว</div></div>
+    <div class="metric"><div class="num" style="color:#c62828">${rejReqs.length}</div><div class="lbl">ปฏิเสธ</div></div>
+    <div class="metric"><div class="num" style="color:#1565c0">${totalQty}</div><div class="lbl">ตลับที่จ่าย</div></div>
+  `;
+  const map={};
+  requests.forEach(r=>{
+    if(!map[r.toner])map[r.toner]={total:0,appQty:0,rejCount:0};
+    map[r.toner].total+=r.qty;
+    if(r.status==="approved"||r.status==="delivered")map[r.toner].appQty+=r.qty;
+    if(r.status==="rejected")map[r.toner].rejCount++;
+  });
+  document.getElementById("report-body").innerHTML=
+    Object.entries(map).map(([n,v])=>`<tr>
+      <td>${n}</td><td style="text-align:center">${v.total}</td>
+      <td style="text-align:center;color:#2e7d32;font-weight:600">${v.appQty}</td>
+      <td style="text-align:center;color:#c62828">${v.rejCount}</td>
+      <td style="text-align:center;font-weight:600">${stock[n]||0}</td>
+    </tr>`).join("")||`<tr><td colspan="5" style="text-align:center;color:#aaa">ยังไม่มีข้อมูล</td></tr>`;
+}
+
+function renderAll(){
+  if(_currentRole==="user"){
+    if(_currentUserTab==="status") renderStatus();
+    else if(_currentUserTab==="history") renderHistory();
+  } else {
+    if(_currentAdminTab==="dashboard") renderDashboard();
+    else if(_currentAdminTab==="approve") renderApprove();
+    else if(_currentAdminTab==="stock") renderStock();
+    else if(_currentAdminTab==="report") renderReport();
+  }
+}
+
+/* AUTO-REFRESH + SYNC every 5 seconds */
+async function autoRefresh(){
+  await loadData();
+  const now = new Date();
+  const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+  const el = document.getElementById("refresh-indicator");
+  if(el) el.textContent = `🔄 ซิงค์ล่าสุด ${timeStr}`;
+  renderAll();
+}
+
+/* INIT */
+async function init(){
+  const el = document.getElementById("refresh-indicator");
+  if(el) el.textContent = "⏳ กำลังโหลดข้อมูล...";
+  await loadData();
+  switchRole("user");
+  setInterval(autoRefresh, 5000);
+}
+init();
+</script>
+
+<!-- Refresh indicator -->
+<div id="refresh-indicator" style="position:fixed;bottom:12px;right:16px;background:rgba(26,58,107,0.85);color:#fff;font-size:12px;padding:6px 12px;border-radius:20px;font-family:'Sarabun',sans-serif;z-index:100;pointer-events:none">🔄 อัปเดตอัตโนมัติทุก 5 วินาที</div>
+</body>
+</html>
