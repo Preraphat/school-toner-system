@@ -108,6 +108,26 @@
   .modal-cancel{font-size:13px;color:#888;cursor:pointer;text-decoration:underline}
   .modal-cancel:hover{color:#333}
 </style>
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyArfVUPTHEG0bfCZLIqGAAPWEvYUr0RLVA",
+    authDomain: "school-ink-system.firebaseapp.com",
+    projectId: "school-ink-system",
+    storageBucket: "school-ink-system.firebasestorage.app",
+    messagingSenderId: "9861812009",
+    appId: "1:9861812009:web:a54945befa18168e607138"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const DATA_REF = doc(db, "toner", "main");
+
+  window._firestore = { db, DATA_REF, setDoc, getDoc, onSnapshot, doc };
+</script>
 </head>
 <body>
 
@@ -317,23 +337,25 @@ let stock = {...DEFAULT_STOCK};
 let requests = [];
 let nextId = 1;
 
-/* ── STORAGE HELPERS ── */
+/* ── FIREBASE HELPERS ── */
 async function saveData(){
   try{
-    await window.storage.set("toner_requests", JSON.stringify({requests, nextId, stock}), true);
+    const { DATA_REF, setDoc } = window._firestore;
+    await setDoc(DATA_REF, {requests, nextId, stock});
   }catch(e){ console.error("save error",e); }
 }
 
 async function loadData(){
   try{
-    const res = await window.storage.get("toner_requests", true);
-    if(res && res.value){
-      const d = JSON.parse(res.value);
+    const { DATA_REF, getDoc } = window._firestore;
+    const snap = await getDoc(DATA_REF);
+    if(snap.exists()){
+      const d = snap.data();
       requests = d.requests || [];
       nextId   = d.nextId   || 1;
       stock    = d.stock    || {...DEFAULT_STOCK};
     }
-  }catch(e){ /* ยังไม่มีข้อมูล */ }
+  }catch(e){ console.error("load error",e); }
 }
 
 function today(){
@@ -655,23 +677,34 @@ function renderAll(){
   }
 }
 
-/* AUTO-REFRESH + SYNC every 5 seconds */
-async function autoRefresh(){
-  await loadData();
-  const now = new Date();
-  const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
-  const el = document.getElementById("refresh-indicator");
-  if(el) el.textContent = `🔄 ซิงค์ล่าสุด ${timeStr}`;
-  renderAll();
+/* AUTO-REFRESH via Firestore real-time listener */
+function startRealtimeSync(){
+  const { DATA_REF, onSnapshot } = window._firestore;
+  onSnapshot(DATA_REF, (snap) => {
+    if(snap.exists()){
+      const d = snap.data();
+      requests = d.requests || [];
+      nextId   = d.nextId   || 1;
+      stock    = d.stock    || {...DEFAULT_STOCK};
+    }
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+    const el = document.getElementById("refresh-indicator");
+    if(el) el.textContent = `🔄 ซิงค์ล่าสุด ${timeStr}`;
+    renderAll();
+  });
 }
 
 /* INIT */
 async function init(){
   const el = document.getElementById("refresh-indicator");
   if(el) el.textContent = "⏳ กำลังโหลดข้อมูล...";
+  // รอ Firebase module โหลดเสร็จก่อน
+  let tries = 0;
+  while(!window._firestore && tries++ < 20) await new Promise(r=>setTimeout(r,200));
   await loadData();
   switchRole("user");
-  setInterval(autoRefresh, 5000);
+  startRealtimeSync();
 }
 init();
 </script>
