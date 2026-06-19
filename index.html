@@ -92,22 +92,6 @@
   .stock-item{background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:14px}
   .stock-item.low{border-color:#ef9a9a;background:#fffafa}
 
-
-
-  /* Notification badge */
-  .notif-badge{display:inline-block;background:#c62828;color:#fff;border-radius:50%;font-size:11px;font-weight:700;min-width:18px;height:18px;line-height:18px;text-align:center;padding:0 4px;margin-left:6px;vertical-align:middle}
-
-  /* Low stock popup */
-  #stock-alert-popup{position:fixed;top:70px;right:16px;background:#fff;border:2px solid #ef5350;border-radius:12px;padding:16px 20px;z-index:998;box-shadow:0 4px 20px rgba(0,0,0,0.15);max-width:300px;animation:slideIn 0.3s ease}
-  #stock-alert-popup.hide{display:none!important}
-  #stock-alert-popup h4{color:#c62828;font-size:14px;font-weight:700;margin-bottom:10px}
-  #stock-alert-popup ul{list-style:none;padding:0;margin:0 0 12px}
-  #stock-alert-popup li{font-size:13px;padding:4px 0;border-bottom:1px solid #fce4e4;color:#333}
-  #stock-alert-popup li:last-child{border:none}
-  #stock-alert-popup .close-popup{font-size:12px;color:#888;cursor:pointer;text-align:right;display:block}
-  #stock-alert-popup .close-popup:hover{color:#333}
-  @keyframes slideIn{from{transform:translateX(20px);opacity:0}to{transform:translateX(0);opacity:1}}to{transform:scale(1);opacity:1}}
-
   @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap');
 
   /* Admin password modal */
@@ -146,7 +130,6 @@
 </script>
 </head>
 <body>
-
 
 <!-- Confirm Clear Modal -->
 <div id="confirm-modal" class="modal-overlay hide">
@@ -261,10 +244,10 @@
             <label>ห้อง / แผนก <span style="color:red">*</span></label>
             <select id="rs-room">
               <option value="">-- เลือกห้อง --</option>
-              <option>12-202 ห้องพักครูสามัญ</option>
+              <option>12-202 ห้องพักครูการตลาด</option>
               <option>1X-301 ห้องพักครูอาหาร</option>
-              <option>11-401 ห้องพักครูตลาด</option>
-              <option>12-201 ห้องพักครูเทคโนโลยีสารเทศ</option>
+              <option>11-401 ห้องพักครูสามัญ</option>
+              <option>12-201 ห้องพักครูเทคโนโลยีสารสนเทศ</option>
               <option>ชั้น 1 ห้องครัว</option>
             </select>
           </div>
@@ -828,7 +811,6 @@ function renderReport(){
 }
 
 function renderAll(){
-  if(_currentRole==="admin") checkLowStock();
   if(_currentRole==="user"){
     if(_currentUserTab==="status") renderStatus();
     else if(_currentUserTab==="history") renderHistory();
@@ -841,51 +823,6 @@ function renderAll(){
     else if(_currentAdminTab==="report") renderReport();
   }
 }
-
-
-
-
-/* ── EXPOSE FUNCTIONS TO GLOBAL SCOPE (needed because Firebase uses type=module) ── */
-
-const LOW_STOCK_THRESHOLD = 2;
-
-function checkLowStock(){
-  const lowItems = Object.entries(stock).filter(([,qty]) => qty <= LOW_STOCK_THRESHOLD);
-  
-  // Update badge on nav tab
-  const navEl = document.getElementById('atnav-stock');
-  if(navEl){
-    const existing = navEl.querySelector('.notif-badge');
-    if(existing) existing.remove();
-    if(lowItems.length > 0){
-      navEl.innerHTML = '📦 จัดการสต็อก' + `<span class="notif-badge">${lowItems.length}</span>`;
-    } else {
-      navEl.innerHTML = '📦 จัดการสต็อก';
-    }
-  }
-
-  // Show popup only when admin is viewing & there are low stock items
-  const popup = document.getElementById('stock-alert-popup');
-  const list  = document.getElementById('stock-alert-list');
-  if(!popup || !list) return;
-  if(_currentRole === 'admin' && lowItems.length > 0){
-    list.innerHTML = lowItems.map(([name, qty]) =>
-      `<li>🖨 ${name} — <strong style="color:#c62828">เหลือ ${qty} ตลับ</strong></li>`
-    ).join('');
-    popup.classList.remove('hide');
-  } else {
-    popup.classList.add('hide');
-  }
-}
-
-window.switchRole=switchRole; window.userTab=userTab; window.adminTab=adminTab;
-window.submitRequest=submitRequest; window.clearForm=clearForm;
-window.submitRestockRequest=submitRestockRequest; window.updateRestockToner=updateRestockToner;
-window.updateToner=updateToner; window.changeStatus=changeStatus;
-window.addStock=addStock; window.clearHistory=clearHistory;
-window.confirmClear=confirmClear; window.cancelClear=cancelClear;
-window.checkPassword=checkPassword; window.cancelAdmin=cancelAdmin;
-window.markRestockDone=markRestockDone;
 
 /* AUTO-REFRESH via Firestore real-time listener */
 function startRealtimeSync(){
@@ -918,14 +855,6 @@ async function init(){
 }
 init();
 </script>
-
-
-<!-- Low Stock Alert Popup -->
-<div id="stock-alert-popup" class="hide">
-  <h4>⚠️ สต็อกใกล้หมด!</h4>
-  <ul id="stock-alert-list"></ul>
-  <span class="close-popup" onclick="document.getElementById('stock-alert-popup').classList.add('hide')">✕ ปิด</span>
-</div>
 
 <!-- Refresh indicator -->
 <div id="refresh-indicator" style="position:fixed;bottom:12px;right:16px;background:rgba(26,58,107,0.85);color:#fff;font-size:12px;padding:6px 12px;border-radius:20px;font-family:'Sarabun',sans-serif;z-index:100;pointer-events:none">🔄 อัปเดตอัตโนมัติทุก 5 วินาที</div>
